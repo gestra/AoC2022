@@ -9,8 +9,7 @@
       [(empty? lst) empty]
       [(empty? (rest lst)) (list (+ acc (first lst)))]
       [(false? (first lst)) (cons acc (iter (rest lst) 0))]
-      [else
-       (iter (rest lst) (+ acc (first lst)))]))
+      [else (iter (rest lst) (+ acc (first lst)))]))
   (iter lst 0))
 
 (define sorted (sort (total-calories input) >))
