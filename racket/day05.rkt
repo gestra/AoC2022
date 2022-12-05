@@ -53,13 +53,9 @@
     stacks))
 
 (define (apply-all-procedures stacks procedures new-model?)
-  (cond
-    [(empty? procedures) stacks]
-    [else
-     (apply-all-procedures
-      (apply-procedure stacks (first procedures) new-model?)
-      (rest procedures)
-      new-model?)]))
+  (for ([p procedures])
+    (set! stacks (apply-procedure stacks p new-model?)))
+  stacks)
 
 (define (solve in new-model?)
   (list->string
