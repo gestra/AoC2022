@@ -20,11 +20,11 @@
 
 (define (parse-starting-pos positions)
   (build-list
-   (ceiling (/ (length (list-ref positions 0)) 4))
+   (ceiling (/ (apply max (map length  positions)) 4))
    (lambda (x)
      (let ([i (+ 1 (* 4 x))])
        (for/list ([row positions]
-                  #:when (char-alphabetic? (list-ref row i)))
+                  #:when (and (< i (length row)) (char-alphabetic? (list-ref row i))))
          (list-ref row i))))))
 
 (define (apply-procedure stacks procedure new-model?)
