@@ -56,9 +56,10 @@
 
 (define (solve-1 pairs)
   (let ([orders (map (lambda (x) (right-order? (car x) (cdr x))) pairs)])
-    (for/sum ([i (in-range (length orders))]
-              #:when (list-ref orders i))
-      (add1 i))))
+    (for/sum ([o orders]
+              [i (in-range 1 (add1 (length orders)))]
+              #:when o)
+      i)))
 
 (define (solve-2 pairs)
   (define (collect-individual p)
