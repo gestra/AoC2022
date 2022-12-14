@@ -30,16 +30,15 @@
           [else (append (coords-between (first lst) (second lst)) (parse-num (rest lst)))]))
       (parse-num ends)))
 
-  (let ([h (make-hash)])
-    (for ([l lst])
-      (for-each (lambda (x) (hash-set! h x #t)) (parse-line l)))
-    h))
+  (cond
+    [(empty? lst) empty]
+    [else (append (parse-line (first lst)) (parse-input (rest lst)))]))
 
 (define (step rocks sand pos [floor #f])
   (define (can-drop-to? pos)
     (if floor
-        (not (or (hash-has-key? rocks pos) (hash-has-key? sand pos) (= (cdr pos) floor)))
-        (not (or (hash-has-key? rocks pos) (hash-has-key? sand pos)))))
+        (not (or (set-member? rocks pos) (set-member? sand pos) (= (cdr pos) floor)))
+        (not (or (set-member? rocks pos) (set-member? sand pos)))))
   (let ([drop-pos (list
                    (cons (car pos) (add1 (cdr pos)))
                    (cons (sub1 (car pos)) (add1 (cdr pos)))
@@ -52,7 +51,7 @@
 
 (define (above-abyss? rocks sand pos)
   (not (for/first ([y (in-range (cdr pos) (+ (cdr pos) 500))]
-                   #:when (or (hash-has-key? rocks (cons (car pos) y)) (hash-has-key? sand (cons (car pos) y))))
+                   #:when (or (set-member? rocks (cons (car pos) y)) (set-member? sand (cons (car pos) y))))
          #t)))
 
 (define (new-sand rocks sand [floor #f])
@@ -61,21 +60,22 @@
       (let ([new-pos (step rocks sand pos floor)])
         (cond
           [(and (not floor) (above-abyss? rocks sand pos)) sand]
-          [(equal? pos new-pos) (hash-set! sand pos #t) sand]
+          [(equal? pos new-pos) (set-add! sand pos) sand]
           [else (set! pos new-pos) (loop)])))
     (loop)))
 
 (define (simulate rocks [floor #f])
-  (let ([sand (make-hash)])
+  (let ([sand (mutable-set)])
     (define (loop)
-      (define old-count (hash-count sand))
+      (define old-count (set-count sand))
       (new-sand rocks sand floor)
       (cond
-        [(= old-count (hash-count sand)) sand]
+        [(= old-count (set-count sand)) sand]
         [else (loop)]))
     (loop)))
 
-(define rocks (parse-input input))
-(define floor (+ 2 (apply max (map (lambda (x) (cdr x)) (hash-keys rocks)))))
-(printf "Part 1: ~a\n" (hash-count (simulate rocks)))
-(printf "Part 2: ~a\n" (hash-count (simulate rocks floor)))
+(define rocks (list->set (parse-input input)))
+(define floor (+ 2 (apply max (set-map rocks (lambda (x) (cdr x))))))
+
+(printf "Part 1: ~a\n" (set-count (simulate rocks)))
+(printf "Part 2: ~a\n" (set-count (simulate rocks floor)))
