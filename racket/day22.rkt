@@ -110,6 +110,103 @@
        (when (not (char=? #\# (vector-ref (vector-ref board next-y) x))) (set! y next-y) (set! can-move #t)))])
   (cons x y))
 
+(define (next-pos-cube pos facing size)
+  (define x (car pos))
+  (define y (cdr pos))
+  (define new-facing #f)
+  (define next (cond
+                 [(= 0 facing) ; Right
+                  (let ([xn (add1 x)])
+                    (cond
+                      [(= 0 (modulo xn size))
+                       (cond
+                         [(and (= xn (* 3 size)) (= 0 (floor (/ y size))))
+                          (set! new-facing 2)
+                          (cons (sub1 (* 2 size)) (sub1 (- (* 3 size) y)))]
+                         [(= 1 (floor (/ y size)))
+                          (set! new-facing 3)
+                          (cons (+ size y) (sub1 size))]
+                         [(and (= xn (* 2 size)) (= 2 (floor (/ y size))))
+                          (set! new-facing 2)
+                          (cons (sub1 (* 3 size)) (sub1 (- (* 3 size) y)))]
+                         [(= 3 (floor (/ y size)))
+                          (set! new-facing 3)
+                          (cons (- y (* 2 size)) (sub1 (* 3 size)))]
+                         [else (cons xn y)])]
+                      [else (cons xn y)]))]
+                 [(= 1 facing) ; Down
+                  (let ([yn (add1 y)])
+                    (cond
+                      [(= 0 (modulo yn size))
+                       (cond
+                         [(and (= yn (* 4 size)) (= 0 (floor (/ x size))))
+                          (set! new-facing 1)
+                          (cons (+ x (* 2 size)) 0)]
+                         [(and (= yn (* 3 size)) (= 1 (floor (/ x size))))
+                          (set! new-facing 2)
+                          (cons (sub1 size) (+ x (* 2 size)))]
+                         [(= 2 (floor (/ x size)))
+                          (set! new-facing 2)
+                          (cons (sub1 (* 2 size)) (- x size))]
+                         [else (cons x yn)])]
+                      [else (cons x yn)]))]
+                 [(= 2 facing) ; Left
+                  (let ([xn (sub1 x)])
+                          (cond
+                            [(= (sub1 size) (modulo xn size))
+                             (cond
+                               [(and (= xn (sub1 size)) (= 0 (floor (/ y size))))
+                                (set! new-facing 0)
+                                (cons 0 (sub1 (- (* 3 size) y)))]
+                               [(= 1 (floor (/ y size)))
+                                (set! new-facing 1)
+                                (cons (- y size) (* 2 size))]
+                               [(and (= xn -1) (= 2 (floor (/ y size))))
+                                (set! new-facing 0)
+                                (cons size (sub1 (- (* 3 size) y)))]
+                               [(= 3 (floor (/ y size)))
+                                (set! new-facing 1)
+                                (cons (- y (* 2 size)) 0)]
+                               [else (cons xn y)])]
+                            [else (cons xn y)]))]
+                 [(= 3 facing) ; Up
+                  (let ([yn (sub1 y)])
+                    (cond
+                      [(= (sub1 size) (modulo yn size))
+                       (cond
+                         [(and (= yn (sub1 (* 2 size))) (= 0 (floor (/ x size))))
+                          (set! new-facing 0)
+                          (cons size (+ x size))]
+                         [(and (= yn -1) (= 1 (floor (/ x size))))
+                          (set! new-facing 0)
+                          (cons 0 (+ x (* 2 size)))]
+                         [(= 2 (floor (/ x size)))
+                          (set! new-facing 3)
+                          (cons (- x (* 2 size)) (sub1 (* 4 size)))]
+                         [else (cons x yn)])]
+                      [else (cons x yn)]))]))
+  (cons next new-facing))
+
+(define (move-cube board pos facing steps size)
+  (define x (car pos))
+  (define y (cdr pos))
+  (define stop? #f)
+  (for ([_ (in-range steps)]
+        #:break stop?)
+    (define n (next-pos-cube (cons x y) facing size))
+    (define next-pos (car n))
+    (define new-facing (cdr n))
+    
+    
+        
+    (set! stop? #t)
+    (when (not (char=? #\# (vector-ref (vector-ref board (cdr next-pos)) (car next-pos))))
+      (set! x (car next-pos))
+      (set! y (cdr next-pos))
+      (when new-facing (set! facing new-facing))
+      (set! stop? #f)))
+  (cons (cons x y) facing))
+
 (define (travel board starting-pos directions)
   (define pos starting-pos)
   (define facing 0)
@@ -124,14 +221,36 @@
     
   (cons pos facing))
 
+(define (travel-cube board starting-pos directions size)
+  (define pos starting-pos)
+  (define facing 0)
+  (for ([d directions])
+    (cond
+      [(number? d)
+       (define res (move-cube board pos facing d size))
+       (set! pos (car res))
+       (set! facing (cdr res))]
+      [else
+       (set! facing (if (char=? #\L d)
+                        (modulo (sub1 facing) 4)
+                        (modulo (add1 facing) 4)))]))
+    
+  (cons pos facing))
+
 (define (solve-1 board starting-pos directions)
   (define res (travel board starting-pos directions))
   (+ (* 1000 (add1 (cdr (car res)))) (* 4 (add1 (car (car res)))) (cdr res)))
 
+(define (solve-2 board starting-pos directions size)
+  (define res (travel-cube board starting-pos directions size))
+  (+ (* 1000 (add1 (cdr (car res)))) (* 4 (add1 (car (car res)))) (cdr res)))
+
 (define start (parse input))
+(define size 50)
 
 (define board (first start))
 (define starting-pos (last start))
 (define directions (split-turns (string->list (second start))))
 
 (printf "Part 1: ~a\n" (solve-1 board starting-pos directions))
+(printf "Part 2: ~a\n" (solve-2 board starting-pos directions size))
